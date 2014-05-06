@@ -3,8 +3,8 @@ package org.olylakers.cBloomfilter;
 import java.util.BitSet;
 
 public class CBloomFilter extends BloomFilter {
-    private static final long serialVersionUID = -5067425564811641011L;
-    protected BitSet counts;
+    	private static final long serialVersionUID = -5067425564811641011L;
+    	protected BitSet counts;
 	protected int bitCount;
 
 	/**
