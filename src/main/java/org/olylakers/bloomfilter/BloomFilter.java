@@ -142,31 +142,6 @@ public class BloomFilter {
         return true;
     }
     
-    /**
-     * remove a bizId from the set
-     * @param key
-     * @param bizId
-     */
-    public void remove(String key, int bizId){
-        int[] offset = HashUtils.murmurHashOffset(bizId, hashFunctionCount, bitSize);
-        ShardedJedis jedis = null;
-        boolean connected = true;
-        try {
-            jedis = pool.getResource();
-            for (int i : offset) {
-                jedis.setbit(key, i, false);
-            }
-        }finally{
-            if(jedis != null){
-                if(connected){
-                    pool.returnResource(jedis);
-                }else{
-                    pool.returnBrokenResource(jedis);
-                }
-            }
-        }
-    }
-    
     public long count(String key){
         ShardedJedis jedis = null;
         boolean connected = true;
