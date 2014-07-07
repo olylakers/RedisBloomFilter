@@ -111,14 +111,42 @@ public class BloomFilter {
                 }
             }
         }
-    } 
+    }
+    
+    /**
+     * add one object using the specified key
+     * @param key
+     * @param bizId
+     */
+    public void addWithPipe(String key, long bizId){
+        int[] offset = HashUtils.murmurHashOffset(bizId, hashFunctionCount, bitSize);
+        ShardedJedis jedis = null;
+        boolean connected = true;
+        try {
+            jedis = pool.getResource();
+            ShardedJedisPipeline pipeline = jedis.pipelined();
+            for (int i : offset) {
+                pipeline.setbit(key, i, true);
+            }
+            
+            pipeline.sync();
+        }finally{
+            if(jedis != null){
+                if(connected){
+                    pool.returnResource(jedis);
+                }else{
+                    pool.returnBrokenResource(jedis);
+                }
+            }
+        }
+    }     
     
     /**
      * Check if a bizId is part of the set
      * @param key
      * @param bizId
      */
-    public boolean include(String key, int bizId){
+    public boolean include(String key, long bizId){
         int[] offset = HashUtils.murmurHashOffset(bizId, hashFunctionCount, bitSize);
         ShardedJedis jedis = null;
         boolean connected = true;
@@ -142,6 +170,43 @@ public class BloomFilter {
         return true;
     }
     
+    /**
+     * Check if a bizId is part of the set
+     * @param key
+     * @param bizId
+     */
+    public boolean includeWithPipe(String key, long bizId){
+        int[] offset = HashUtils.murmurHashOffset(bizId, hashFunctionCount, bitSize);
+        ShardedJedis jedis = null;
+        boolean connected = true;
+        try {
+            jedis = pool.getResource();
+            ShardedJedisPipeline pipeline = jedis.pipelined();
+            for (int i : offset) {
+                pipeline.getbit(key, i);
+            }
+            
+            List<Object> responses = pipeline.syncAndReturnAll();
+            for (Object object : responses) {
+                if(object instanceof Boolean){
+                    Boolean contains = (Boolean) object;
+                    if(!contains){
+                        return false;
+                    }
+                }
+            }
+        }finally{
+            if(jedis != null){
+                if(connected){
+                    pool.returnResource(jedis);
+                }else{
+                    pool.returnBrokenResource(jedis);
+                }
+            }
+        }
+        
+        return true;
+    }
     public long count(String key){
         ShardedJedis jedis = null;
         boolean connected = true;
